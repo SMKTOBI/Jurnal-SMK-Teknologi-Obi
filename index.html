@@ -188,12 +188,16 @@
               <label class="block text-xs font-semibold text-slate-600 mb-1">Jam Ke-</label>
               <input type="text" id="inputJamKe" required placeholder="Contoh: 1 - 3" class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
             </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
+              <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1">Kelas</label>
-              <input type="text" id="inputKelas" required placeholder="Contoh: X-Komputer" class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+              <select id="inputMetode" required class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-white">
+                <option value="X-TKJ">X-TKJ</option>
+                <option value="X-Multimedia">X-Multimedia</option>
+                <option value="XI-TKJ">XI-TKJ</option>
+                <option value="XI-Multimedia">XI-Multimedia</option>
+                <option value="XII-TKJ">XII-TKJ</option>
+                <option value="XII-Multimedia">XII-Multimedia</option>
+              </select>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1">Metode</label>
@@ -377,7 +381,7 @@
   <!-- SKRIP LOGIKA FRONTEND & INTEGRASI GAS -->
   <script>
     // KONSTANTA URL GOOGLE APPS SCRIPT
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfm6i4xNA3bOO_gFPJlp7tw2dydYmWrv8yIM4cK7wOEzQtxalShSTn7z0IBooBCr1Qcg/exec"; // Ganti dengan URL web app hasil deployment Google Apps Script Anda
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxdJDiMgfTQNhiHle2TzZ2Q0lB_ZKr_RI-m6WdCYYZABAsakuTvJg0AmaKLig7-mmT4RA/exec"; // Ganti dengan URL web app hasil deployment Google Apps Script Anda
 
     // MASTER KELAS METRIK
     const METRIC_CLASSES = [
