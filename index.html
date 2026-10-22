@@ -1,863 +1,964 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="h-full bg-slate-50">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Jurnal & Agenda Pembelajaran Guru - SMK Teknologi Obi</title>
-  
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- FontAwesome CDN -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- SheetJS (XLSX) CDN -->
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Jurnal & Agenda Pembelajaran - SMK Teknologi Obi</title>
 
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    body { font-family: 'Inter', sans-serif; }
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#09517e',
+                            800: '#0c4a6e',
+                            900: '#082f49',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 
-    /* Pengaturan Khusus Cetak Kedinasan */
-    @media print {
-      .no-print { display: none !important; }
-      body { background: #fff !important; color: #000 !important; font-size: 11pt; }
-      .print-area { width: 100% !important; margin: 0 !important; padding: 0 !important; }
-      .print-header { display: block !important; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; }
-      .print-table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; }
-      .print-table th, .print-table td { border: 1px solid #000 !important; padding: 6px 8px !important; text-align: left; }
-      .print-table th { background-color: #f2f2f2 !important; text-align: center; font-weight: bold; }
-      .print-signatures { display: flex !important; justify-content: space-between; margin-top: 40px; page-break-inside: avoid; }
-      .border-badge-print { border: none !important; background: transparent !important; color: #000 !important; padding: 0 !important; font-weight: bold; }
-    }
-  </style>
+    <!-- Font Awesome 6 CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- SheetJS CDN for native .xlsx export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Print Stylesheet for Official Reports */
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white !important; color: black !important; font-size: 11pt; }
+            .container-print { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            table { border-collapse: collapse !important; width: 100% !important; font-size: 10pt; }
+            th, td { border: 1px solid #333 !important; padding: 6px 8px !important; text-align: left; }
+            .page-break { page-break-inside: avoid; }
+        }
+        
+        .print-only { display: none; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between">
+<body class="h-full text-slate-800 flex flex-col min-h-screen">
 
-  <!-- TOAST NOTIFICATION CONTAINER -->
-  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 no-print"></div>
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full no-print"></div>
 
-  <!-- MAIN WRAPPER -->
-  <div class="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full print-area">
-    
-    <!-- HEADER APP (NO-PRINT) -->
-    <header class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-6 no-print flex flex-col sm:flex-row justify-between items-center gap-4">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-md">
-          <i class="fa-solid fa-graduation-cap text-2xl"></i>
+    <!-- MODAL CONFIRMATION DIALOG -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 p-6 transform transition-all">
+            <div class="flex items-center gap-4 text-amber-500 mb-4">
+                <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800" id="modalTitle">Konfirmasi Hapus</h3>
+                    <p class="text-sm text-slate-500" id="modalMessage">Apakah Anda yakin ingin menghapus data jurnal ini dari cloud?</p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button id="btnCancelModal" class="px-4 py-2 rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 text-sm font-medium transition">Batal</button>
+                <button id="btnConfirmModal" class="px-4 py-2 rounded-lg text-white bg-rose-600 hover:bg-rose-700 text-sm font-medium transition shadow-sm">Ya, Hapus</button>
+            </div>
         </div>
-        <div>
-          <h1 class="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">
-            Sistem Jurnal & Agenda Pembelajaran Guru
-          </h1>
-          <p class="text-sm text-slate-500 font-medium">SMK Teknologi Obi</p>
+    </div>
+
+    <!-- HEADER / NAVBAR -->
+    <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-30 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-brand-600 flex items-center justify-center text-white font-bold text-xl shadow-md border border-brand-500">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg leading-tight tracking-wide">Sistem Jurnal & Agenda Guru</h1>
+                    <p class="text-xs text-slate-400 font-medium">SMK Teknologi Obi</p>
+                </div>
+            </div>
+            
+            <!-- Cloud Connection Status Indicator -->
+            <div class="flex items-center gap-3">
+                <div id="cloudStatusBadge" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800">
+                    <span class="relative flex h-2.5 w-2.5">
+                      <span id="pingDot" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span id="staticDot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    <span id="statusText">Tersambung ke Cloud</span>
+                </div>
+                <button onclick="refreshDataFromCloud()" title="Muat Ulang Data Cloud" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition">
+                    <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i>
+                </button>
+            </div>
         </div>
-      </div>
-      
-      <!-- BADGE STATUS CLOUD -->
-      <div id="cloudStatus" class="flex items-center gap-2.5 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-medium text-xs sm:text-sm">
-        <span class="relative flex h-3 w-3">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-        </span>
-        <span id="cloudStatusText">Tersambung ke Cloud</span>
-      </div>
     </header>
 
-    <!-- HEADER CETAK (KHUSUS DIPRINT) -->
-    <div class="hidden print-header">
-      <h2 class="text-xl font-bold uppercase tracking-wide">JURNAL DAN AGENDA PEMBELAJARAN GURU</h2>
-      <h3 class="text-lg font-semibold uppercase">SMK TEKNOLOGI OBI</h3>
-      <p class="text-xs text-slate-600">Dokumen Rekapitulasi Kegiatan Pembelajaran & Kehadiran Siswa</p>
+    <!-- PRINT HEADER (Hanya Tampil Saat Print Kedinasan) -->
+    <div class="print-only mb-6 text-center border-b-2 border-slate-900 pb-4">
+        <div class="flex items-center justify-center gap-4 mb-2">
+            <div class="text-center">
+                <h2 class="text-xl font-bold uppercase tracking-wider">PEMERINTAH PROVINSI MALUKU UTARA</h2>
+                <h1 class="text-2xl font-black uppercase tracking-widest text-slate-900">SMK TEKNOLOGI OBI</h1>
+                <p class="text-xs italic">Jl. Pendidikan No. 01, Laiwui, Kec. Obi, Kab. Halmahera Selatan</p>
+                <p class="text-xs">Email: smkteknoobi@gmail.com | Website: smkteknologiobi.sch.id</p>
+            </div>
+        </div>
+        <div class="mt-4 border-t border-slate-400 pt-2">
+            <h3 class="text-base font-bold underline uppercase">LAPORAN AGENDA & JURNAL PEMBELAJARAN GURU</h3>
+            <p class="text-xs text-slate-600" id="printSubTitle">Periode Data: Seluruh Pembelajaran</p>
+        </div>
     </div>
 
-    <!-- METRIC CARDS (NO-PRINT) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6 no-print">
-      <!-- Kelas X-Komputer -->
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
-        <div>
-          <div class="flex justify-between items-start mb-1">
-            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Kelas X-Komputer</span>
-            <i class="fa-solid fa-laptop text-slate-400 text-xs"></i>
-          </div>
-          <div class="text-xs text-slate-500 font-medium truncate mb-3" id="metric-guru-0">Guru: -</div>
-        </div>
-        <div class="grid grid-cols-4 gap-1 text-center bg-slate-50 p-2 rounded-lg border border-slate-100 text-xs font-semibold" id="metric-absensi-0">
-          <div><span class="block text-[10px] text-slate-400 font-normal">H</span><span class="text-emerald-600">0</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">S</span><span class="text-amber-600">0</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">I</span><span class="text-blue-600">0</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">A</span><span class="text-rose-600">0</span></div>
-        </div>
-      </div>
-
-      <!-- Kelas XI-TKJ -->
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
-        <div>
-          <div class="flex justify-between items-start mb-1">
-            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Kelas XI-TKJ</span>
-            <i class="fa-solid fa-network-wired text-slate-400 text-xs"></i>
-          </div>
-          <div class="text-xs text-slate-500 font-medium truncate mb-3" id="metric-guru-1">Guru: -</div>
-        </div>
-        <div class="grid grid-cols-4 gap-1 text-center bg-slate-50 p-2 rounded-lg border border-slate-100 text-xs font-semibold" id="metric-absensi-1">
-          <div><span class="block text-[10px] text-slate-400 font-normal">H</span><span class="text-emerald-600">0</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">S</span><span class="text-amber-600">0</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">I</span><span class="text-blue-600">0</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">A</span><span class="text-rose-600">0</span></div>
-        </div>
-      </div>
-
-      <!-- Kelas XI-Multimedia -->
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
-        <div>
-          <div class="flex justify-between items-start mb-1">
-            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Kelas XI-MM</span>
-            <i class="fa-solid fa-photo-film text-slate-400 text-xs"></i>
-          </div>
-          <div class="text-xs text-slate-500 font-medium truncate mb-3" id="metric-guru-2">Guru: -</div>
-        </div>
-        <div class="grid grid-cols-4 gap-1 text-center bg-slate-50 p-2 rounded-lg border border-slate-100 text-xs font-semibold" id="metric-absensi-2">
-          <div><span class="block text-[10px] text-slate-400 font-normal">H</span><span class="text-emerald-600">0</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">S</span><span class="text-amber-600">0</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">I</span><span class="text-blue-600">0</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">A</span><span class="text-rose-600">0</span></div>
-        </div>
-      </div>
-
-      <!-- Kelas XII-TKJ -->
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
-        <div>
-          <div class="flex justify-between items-start mb-1">
-            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Kelas XII-TKJ</span>
-            <i class="fa-solid fa-server text-slate-400 text-xs"></i>
-          </div>
-          <div class="text-xs text-slate-500 font-medium truncate mb-3" id="metric-guru-3">Guru: -</div>
-        </div>
-        <div class="grid grid-cols-4 gap-1 text-center bg-slate-50 p-2 rounded-lg border border-slate-100 text-xs font-semibold" id="metric-absensi-3">
-          <div><span class="block text-[10px] text-slate-400 font-normal">H</span><span class="text-emerald-600">0</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">S</span><span class="text-amber-600">0</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">I</span><span class="text-blue-600">0</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">A</span><span class="text-rose-600">0</span></div>
-        </div>
-      </div>
-
-      <!-- Kelas XII-Multimedia -->
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
-        <div>
-          <div class="flex justify-between items-start mb-1">
-            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Kelas XII-MM</span>
-            <i class="fa-solid fa-clapperboard text-slate-400 text-xs"></i>
-          </div>
-          <div class="text-xs text-slate-500 font-medium truncate mb-3" id="metric-guru-4">Guru: -</div>
-        </div>
-        <div class="grid grid-cols-4 gap-1 text-center bg-slate-50 p-2 rounded-lg border border-slate-100 text-xs font-semibold" id="metric-absensi-4">
-          <div><span class="block text-[10px] text-slate-400 font-normal">H</span><span class="text-emerald-600">0</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">S</span><span class="text-amber-600">0</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">I</span><span class="text-blue-600">0</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">A</span><span class="text-rose-600">0</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- MAIN CONTENT 2 KOLOM -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-      
-      <!-- KOLOM KIRI: FORM INPUT & EDIT (NO-PRINT) -->
-      <div class="lg:col-span-4 bg-white rounded-xl shadow-sm border border-slate-200 p-5 sticky top-6 no-print">
-        <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
-          <h2 id="formTitle" class="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <i class="fa-solid fa-pen-to-square text-indigo-600"></i> Input Agenda Pembelajaran
-          </h2>
-          <span id="formModeBadge" class="bg-indigo-100 text-indigo-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">Mode Baru</span>
-        </div>
-
-        <form id="agendaForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
-          <input type="hidden" id="editId" value="">
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Guru</label>
-            <input type="text" id="inputNamaGuru" required placeholder="Contoh: Lisa Herniyati, S.Pd." class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal</label>
-              <input type="date" id="inputTanggal" required class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Jam Ke-</label>
-              <input type="text" id="inputJamKe" required placeholder="Contoh: 1 - 3" class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
-            </div>
-              <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Kelas</label>
-              <select id="inputMetode" required class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-white">
-                <option value="X-TKJ">X-TKJ</option>
-                <option value="X-Multimedia">X-Multimedia</option>
-                <option value="XI-TKJ">XI-TKJ</option>
-                <option value="XI-Multimedia">XI-Multimedia</option>
-                <option value="XII-TKJ">XII-TKJ</option>
-                <option value="XII-Multimedia">XII-Multimedia</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Metode</label>
-              <select id="inputMetode" required class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-white">
-                <option value="Teori">Teori</option>
-                <option value="Praktikum">Praktikum</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Materi / Tujuan Pembelajaran (TP)</label>
-            <textarea id="inputMateri" required rows="3" placeholder="Deskripsikan materi pembelajaran hari ini..." class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition resize-none"></textarea>
-          </div>
-
-          <!-- ABSENSI GRID 4 KOLOM -->
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1.5">Rekapitulasi Kehadiran Siswa</label>
-            <div class="grid grid-cols-4 gap-2">
-              <div>
-                <span class="block text-[11px] text-emerald-700 font-bold mb-0.5 text-center">Hadir</span>
-                <input type="number" id="inputHadir" min="0" value="0" required class="w-full text-center text-sm px-2 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
-              </div>
-              <div>
-                <span class="block text-[11px] text-amber-700 font-bold mb-0.5 text-center">Sakit</span>
-                <input type="number" id="inputSakit" min="0" value="0" required class="w-full text-center text-sm px-2 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none">
-              </div>
-              <div>
-                <span class="block text-[11px] text-blue-700 font-bold mb-0.5 text-center">Izin</span>
-                <input type="number" id="inputIzin" min="0" value="0" required class="w-full text-center text-sm px-2 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-              </div>
-              <div>
-                <span class="block text-[11px] text-rose-700 font-bold mb-0.5 text-center">Alpa</span>
-                <input type="number" id="inputAlpa" min="0" value="0" required class="w-full text-center text-sm px-2 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none">
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Refleksi Guru</label>
-            <textarea id="inputRefleksi" rows="2" placeholder="Catatan/evaluasi proses pembelajaran..." class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition resize-none"></textarea>
-          </div>
-
-          <div class="pt-2 space-y-2">
-            <button type="submit" id="btnSubmit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition duration-200 flex items-center justify-center gap-2 text-sm">
-              <i class="fa-solid fa-cloud-arrow-up"></i>
-              <span id="btnSubmitText">Simpan ke Spreadsheet</span>
-            </button>
-            <button type="button" id="btnCancel" onclick="resetForm()" class="hidden w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 px-4 rounded-lg transition text-sm">
-              Batal Ubah
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <!-- KOLOM KANAN: FILTER, TABEL RIWAYAT, & AREA CETAK -->
-      <div class="lg:col-span-8 bg-white rounded-xl shadow-sm border border-slate-200 p-5 print-area">
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         
-        <!-- TOOLBAR FILTER & EKSPOR (NO-PRINT) -->
-        <div class="flex flex-col gap-4 mb-5 no-print">
-          <div class="flex flex-wrap justify-between items-center gap-3">
-            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <i class="fa-solid fa-list-check text-indigo-600"></i> Riwayat Jurnal Cloud
-            </h2>
+        <!-- SECTION METRIK / STATISTIK 5 KELAS -->
+        <section class="mb-6 no-print">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-brand-600"></i> Akumulasi Kehadiran Per Kelas
+                </h2>
+                <span class="text-xs text-slate-500">Pembaruan Realtime</span>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" id="metricCardsContainer">
+                <!-- Card Template will be filled dynamically -->
+            </div>
+        </section>
 
-            <div class="flex flex-wrap gap-2">
-              <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
-                <i class="fa-solid fa-file-excel"></i> Unduh Excel (.xlsx)
-              </button>
-              <button onclick="printPDF()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
-                <i class="fa-solid fa-print"></i> Cetak PDF
-              </button>
-            </div>
-          </div>
+        <!-- TWO COLUMN LAYOUT: FORM & TABLE -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- LEFT COLUMN: INPUT / EDIT FORM (Sticky) -->
+            <div class="lg:col-span-4 no-print">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sticky top-20">
+                    
+                    <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center font-bold text-sm" id="formIcon">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </span>
+                            <h2 class="font-bold text-slate-800 text-base" id="formTitle">Form Agenda Baru</h2>
+                        </div>
+                        <span id="editBadge" class="hidden px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
+                            Mode Edit
+                        </span>
+                    </div>
 
-          <!-- BILAH FILTER -->
-          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
-            <div>
-              <label class="block font-medium text-slate-500 mb-1">Filter Kelas</label>
-              <select id="filterKelas" onchange="applyFilters()" class="w-full p-2 border border-slate-300 rounded-md bg-white">
-                <option value="">Semua Kelas</option>
-              </select>
+                    <form id="agendaForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                        <input type="hidden" id="recordId" value="">
+
+                        <!-- Nama Guru -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nama Guru Pengampu *</label>
+                            <input type="text" id="namaGuru" required placeholder="Contoh: Lisa Herniyati, S.Pd."
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition">
+                        </div>
+
+                        <!-- Grid Tanggal & Jam -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tanggal *</label>
+                                <input type="date" id="tanggal" required
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Jam Ke- *</label>
+                                <input type="text" id="jamKe" required placeholder="mis. 1 - 4"
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition">
+                            </div>
+                        </div>
+
+                        <!-- Grid Kelas & Metode -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Kelas / Rombel *</label>
+                                <select id="kelas" required
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition bg-white">
+                                    <option value="">-- Pilih Kelas --</option>
+                                    <option value="X-Komputer">X-Komputer</option>
+                                    <option value="XI-TKJ">XI-TKJ</option>
+                                    <option value="XI-Multimedia">XI-Multimedia</option>
+                                    <option value="XII-TKJ">XII-TKJ</option>
+                                    <option value="XII-Multimedia">XII-Multimedia</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Metode *</label>
+                                <select id="metode" required
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition bg-white">
+                                    <option value="Teori">Teori</option>
+                                    <option value="Praktikum">Praktikum</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Materi / TP -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Materi Pembelajaran / TP *</label>
+                            <textarea id="materi" required rows="2" placeholder="Tuliskan pokok pembahasan atau Tujuan Pembelajaran..."
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition"></textarea>
+                        </div>
+
+                        <!-- Absensi Numerik Grid 4 Kolom -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Presensi / Absensi Siswa</label>
+                            <div class="grid grid-cols-4 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                                <div class="text-center">
+                                    <span class="block text-[10px] font-bold text-emerald-600 uppercase">Hadir</span>
+                                    <input type="number" id="absentHadir" min="0" value="0" required
+                                        class="w-full px-2 py-1 text-center font-bold text-slate-700 bg-white border border-slate-300 rounded focus:ring-1 focus:ring-emerald-500 outline-none text-sm">
+                                </div>
+                                <div class="text-center">
+                                    <span class="block text-[10px] font-bold text-amber-600 uppercase">Sakit</span>
+                                    <input type="number" id="absentSakit" min="0" value="0" required
+                                        class="w-full px-2 py-1 text-center font-bold text-slate-700 bg-white border border-slate-300 rounded focus:ring-1 focus:ring-amber-500 outline-none text-sm">
+                                </div>
+                                <div class="text-center">
+                                    <span class="block text-[10px] font-bold text-blue-600 uppercase">Izin</span>
+                                    <input type="number" id="absentIzin" min="0" value="0" required
+                                        class="w-full px-2 py-1 text-center font-bold text-slate-700 bg-white border border-slate-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-sm">
+                                </div>
+                                <div class="text-center">
+                                    <span class="block text-[10px] font-bold text-rose-600 uppercase">Alpa</span>
+                                    <input type="number" id="absentAlpa" min="0" value="0" required
+                                        class="w-full px-2 py-1 text-center font-bold text-slate-700 bg-white border border-slate-300 rounded focus:ring-1 focus:ring-rose-500 outline-none text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Refleksi Guru -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Refleksi / Catatan Guru</label>
+                            <textarea id="refleksi" rows="2" placeholder="Catatan evaluasi kelas atau respon siswa..."
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition"></textarea>
+                        </div>
+
+                        <!-- Buttons Submit & Cancel -->
+                        <div class="pt-2 flex flex-col gap-2">
+                            <button type="submit" id="btnSubmitForm"
+                                class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 text-sm">
+                                <i class="fa-solid fa-cloud-arrow-up" id="btnSubmitIcon"></i>
+                                <span id="btnSubmitText">Simpan ke Spreadsheet</span>
+                            </button>
+                            <button type="button" id="btnCancelEdit" onclick="resetForm()" class="hidden w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition text-xs flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-xmark"></i> Batal Ubah
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
             </div>
-            <div>
-              <label class="block font-medium text-slate-500 mb-1">Filter Bulan</label>
-              <input type="month" id="filterBulan" onchange="applyFilters()" class="w-full p-2 border border-slate-300 rounded-md bg-white">
+
+            <!-- RIGHT COLUMN: FILTER, TABLE & ACTIONS -->
+            <div class="lg:col-span-8 space-y-4">
+                
+                <!-- FILTER BAR & EXPORT BUTTONS (no-print) -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 no-print space-y-3">
+                    <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                        
+                        <!-- Search & Dropdown Filters -->
+                        <div class="flex flex-wrap items-center gap-2 flex-grow">
+                            <!-- Filter Kelas -->
+                            <select id="filterKelas" onchange="applyFilters()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-brand-500 outline-none bg-slate-50">
+                                <option value="">Semua Kelas</option>
+                                <option value="X-Komputer">X-Komputer</option>
+                                <option value="XI-TKJ">XI-TKJ</option>
+                                <option value="XI-Multimedia">XI-Multimedia</option>
+                                <option value="XII-TKJ">XII-TKJ</option>
+                                <option value="XII-Multimedia">XII-Multimedia</option>
+                            </select>
+
+                            <!-- Filter Bulan -->
+                            <input type="month" id="filterBulan" onchange="applyFilters()"
+                                class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-brand-500 outline-none bg-slate-50">
+
+                            <!-- Reset Filter Button -->
+                            <button onclick="resetFilters()" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium transition flex items-center gap-1">
+                                <i class="fa-solid fa-rotate-left"></i> Reset
+                            </button>
+                        </div>
+
+                        <!-- Page Size Dropdown & Export Actions -->
+                        <div class="flex items-center gap-2 justify-end">
+                            <select id="pageSizeSelect" onchange="changePageSize(this.value)" class="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-brand-500 outline-none bg-slate-50">
+                                <option value="10">10 Data</option>
+                                <option value="50">50 Data</option>
+                                <option value="100">100 Data</option>
+                            </select>
+
+                            <button onclick="exportToExcel()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-file-excel"></i> Excel (.xlsx)
+                            </button>
+
+                            <button onclick="triggerPrint()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-print"></i> Cetak PDF
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- MAIN TABLE CARD -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse" id="mainDataTable">
+                            <thead class="bg-slate-100/80 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200">
+                                <tr>
+                                    <th class="py-3 px-3 text-center w-10">No</th>
+                                    <th class="py-3 px-3">Tanggal & Jam</th>
+                                    <th class="py-3 px-3">Guru & Kelas</th>
+                                    <th class="py-3 px-3">Materi / TP</th>
+                                    <th class="py-3 px-3 text-center">Metode</th>
+                                    <th class="py-3 px-3 text-center">Absensi (H/S/I/A)</th>
+                                    <th class="py-3 px-3">Refleksi</th>
+                                    <th class="py-3 px-3 text-center no-print">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody" class="divide-y divide-slate-100 text-slate-700">
+                                <!-- Data rows injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- EMPTY DATA STATE -->
+                    <div id="emptyState" class="hidden p-8 text-center">
+                        <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3 text-xl">
+                            <i class="fa-solid fa-folder-open"></i>
+                        </div>
+                        <p class="text-sm font-semibold text-slate-600">Belum ada data agenda pembelajaran</p>
+                        <p class="text-xs text-slate-400 mt-1">Silakan tambahkan agenda baru melalui form di sebelah kiri.</p>
+                    </div>
+
+                    <!-- PAGINATION FOOTER (no-print) -->
+                    <div class="px-4 py-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 no-print">
+                        <div class="text-xs text-slate-500 font-medium" id="paginationInfo">
+                            Menampilkan 0 - 0 dari 0 data
+                        </div>
+                        <div class="flex items-center gap-1" id="paginationControls">
+                            <!-- Dynamic pagination buttons -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SIGNATURE SECTION FOR PRINT Kedinasan (Print Only) -->
+                <div class="print-only mt-12 page-break">
+                    <div class="grid grid-cols-2 gap-8 text-center text-xs">
+                        <div>
+                            <p class="mb-1">Mengetahui,</p>
+                            <p class="font-bold uppercase">Kepala SMK Teknologi Obi</p>
+                            <div class="h-20"></div>
+                            <p class="font-bold underline uppercase">M. RIZKY, S.T., M.Pd.</p>
+                            <p class="text-slate-600">NIP. 19850412 201001 1 008</p>
+                        </div>
+                        <div>
+                            <p class="mb-1">Obi, <span id="printDateToday">--</span></p>
+                            <p class="font-bold uppercase">Guru Pengampu Mata Pelajaran</p>
+                            <div class="h-20"></div>
+                            <p class="font-bold underline uppercase" id="printGuruName">( LISA HERNIYATI L.M, S.Pd. )</p>
+                            <p class="text-slate-600">NIP / NUPTK. -</p>
+                        </div>
+                    </div>
+                </div>
+
             </div>
-            <div class="flex items-end">
-              <button onclick="resetFilters()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 p-2 rounded-md font-semibold transition">
-                Reset Filter
-              </button>
-            </div>
-            <div>
-              <label class="block font-medium text-slate-500 mb-1">Tampilkan Data</label>
-              <select id="pageSize" onchange="changePageSize()" class="w-full p-2 border border-slate-300 rounded-md bg-white">
-                <option value="10">10 Data</option>
-                <option value="50">50 Data</option>
-                <option value="100">100 Data</option>
-              </select>
-            </div>
-          </div>
+
         </div>
 
-        <!-- TABEL DATA -->
-        <div class="overflow-x-auto border border-slate-200 rounded-lg">
-          <table class="w-full text-left text-xs text-slate-600 border-collapse print-table">
-            <thead class="bg-slate-100 text-slate-700 font-semibold uppercase tracking-wider border-b border-slate-200">
-              <tr>
-                <th class="py-3 px-2 text-center w-8">No</th>
-                <th class="py-3 px-3 w-24">Tanggal</th>
-                <th class="py-3 px-3 w-28">Kelas & Jam</th>
-                <th class="py-3 px-3">Materi & Metode</th>
-                <th class="py-3 px-3 text-center w-28">Kehadiran</th>
-                <th class="py-3 px-3">Refleksi</th>
-                <th class="py-3 px-3 text-center w-20 no-print">Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody" class="divide-y divide-slate-200 bg-white">
-              <!-- Render otomatis via JavaScript -->
-            </tbody>
-          </table>
-        </div>
+    </main>
 
-        <!-- PAGINASI (NO-PRINT) -->
-        <div class="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4 pt-3 border-t border-slate-100 no-print">
-          <div class="text-xs text-slate-500" id="paginationInfo">
-            Menampilkan 0 - 0 dari 0 data
-          </div>
-          <div class="flex items-center gap-1" id="paginationNav">
-            <!-- Tombol Paginasi -->
-          </div>
-        </div>
-
-        <!-- AREA TANDA TANGAN (KHUSUS DIPRINT) -->
-        <div class="hidden print-signatures">
-          <div class="text-center w-48">
-            <p>Mengetahui,</p>
-            <p class="font-bold">Kepala SMK Teknologi Obi</p>
-            <div class="h-20"></div>
-            <p class="font-bold underline">( ........................................ )</p>
-            <p class="text-xs">NIP. ....................................</p>
-          </div>
-          <div class="text-center w-48">
-            <p id="printDateSign">Halmahera Selatan, ..................</p>
-            <p class="font-bold">Guru Mata Pelajaran</p>
-            <div class="h-20"></div>
-            <p class="font-bold underline" id="printGuruName">( ........................................ )</p>
-            <p class="text-xs">NIP. ....................................</p>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- FOOTER IDENTITAS (NO-PRINT) -->
-    <footer class="mt-8 pt-4 border-t border-slate-200 text-center text-xs text-slate-500 no-print">
-      Aplikasi ini dibuat oleh Devloper | SMK Teknologi Obi | Email: smkteknoobi@gmail.com
+    <!-- FOOTER IDENTITAS (no-print) -->
+    <footer class="mt-auto bg-slate-900 text-slate-400 py-4 text-center text-xs border-t border-slate-800 no-print">
+        <p>Aplikasi ini dibuat oleh <strong>Lisa Herniyati La Muslimin, dkk</strong> | SMK Teknologi Obi | Email: <a href="mailto:smkteknoobi@gmail.com" class="text-brand-400 hover:underline">smkteknoobi@gmail.com</a></p>
     </footer>
 
-  </div>
+    <!-- JAVASCRIPT LOGIC & API INTEGRATION -->
+    <script>
+        // ==========================================
+        // 1. SCRIPT URL & STATE CONFIGURATION
+        // ==========================================
+        // Ganti URL berikut dengan Web App URL dari Google Apps Script yang sudah di-deploy
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyBek3h5-bXOOGvbEOr_8USDVycKGmupg0P-QByhijJoPvCEY-f8ITObMvjOWfK6jp59g/exec";
 
-  <!-- MODAL KONFIRMASI HAPUS DATA -->
-  <div id="deleteModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
-    <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 text-center animate-in fade-in zoom-in duration-200">
-      <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4 text-xl">
-        <i class="fa-solid fa-triangle-exclamation"></i>
-      </div>
-      <h3 class="text-base font-bold text-slate-800 mb-2">Hapus Data Agenda?</h3>
-      <p class="text-xs text-slate-500 mb-6">Tindakan ini tidak dapat dibatalkan. Data pada Spreadsheet cloud akan dihapus secara permanen.</p>
-      <div class="flex gap-3">
-        <button onclick="closeDeleteModal()" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg transition">
-          Batal
-        </button>
-        <button id="confirmDeleteBtn" class="flex-1 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs rounded-lg transition">
-          Ya, Hapus
-        </button>
-      </div>
-    </div>
-  </div>
+        // Local Application States
+        let globalData = [];
+        let filteredData = [];
+        let currentPage = 1;
+        let pageSize = 10;
+        let isEditing = false;
+        let pendingDeleteId = null;
 
-  <!-- SKRIP LOGIKA FRONTEND & INTEGRASI GAS -->
-  <script>
-    // KONSTANTA URL GOOGLE APPS SCRIPT
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxdJDiMgfTQNhiHle2TzZ2Q0lB_ZKr_RI-m6WdCYYZABAsakuTvJg0AmaKLig7-mmT4RA/exec"; // Ganti dengan URL web app hasil deployment Google Apps Script Anda
+        // Static Master Classes Definition
+        const MASTER_CLASSES = [
+            { id: 'X-Komputer', name: 'X-Komputer', defaultGuru: 'Lisa Herniyati, S.Pd.' },
+            { id: 'XI-TKJ', name: 'XI-TKJ', defaultGuru: 'Ahmad Fauzi, S.Kom.' },
+            { id: 'XI-Multimedia', name: 'XI-Multimedia', defaultGuru: 'Siti Rahma, S.T.' },
+            { id: 'XII-TKJ', name: 'XII-TKJ', defaultGuru: 'Budi Santoso, S.Kom.' },
+            { id: 'XII-Multimedia', name: 'XII-Multimedia', defaultGuru: 'Nur Hidayah, S.Pd.' }
+        ];
 
-    // MASTER KELAS METRIK
-    const METRIC_CLASSES = [
-      "X-Komputer",
-      "XI-TKJ",
-      "XI-Multimedia",
-      "XII-TKJ",
-      "XII-Multimedia"
-    ];
+        // Init App on Window Load
+        window.onload = function() {
+            // Set default date to Today
+            document.getElementById('tanggal').value = new Date().toISOString().split('T')[0];
+            
+            // Set Print Today String
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('printDateToday').innerText = new Date().toLocaleDateString('id-ID', options);
 
-    // STATE APLIKASI
-    let rawCloudData = [];
-    let filteredData = [];
-    let currentPage = 1;
-    let itemsPerPage = 10;
-    let pendingDeleteId = null;
+            // Fetch initial data from Cloud via JSONP
+            fetchDataFromCloud();
+        };
 
-    // INISIALISASI APLIKASI
-    document.addEventListener("DOMContentLoaded", () => {
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById("inputTanggal").value = today;
-      fetchDataFromCloud();
-    });
+        // ==========================================
+        // 2. JSONP GET DATA INTEGRATION (BYPASS CORS)
+        // ==========================================
+        function fetchDataFromCloud() {
+            setCloudStatus('loading', 'Memuat data...');
+            const icon = document.getElementById('refreshIcon');
+            if(icon) icon.classList.add('fa-spin');
 
-    // 1. PENGAMBILAN DATA (GET) VIA JSONP
-    function fetchDataFromCloud() {
-      updateCloudBadge(false, "Menghubungkan...");
-      
-      const oldScript = document.getElementById("jsonpScript");
-      if (oldScript) oldScript.remove();
+            // Unique callback name
+            const callbackName = 'handleDataFromCloud_' + Math.floor(Math.random() * 100000);
+            
+            // Define global callback function
+            window[callbackName] = function(response) {
+                if(icon) icon.classList.remove('fa-spin');
+                
+                // Cleanup dynamically injected script tag
+                delete window[callbackName];
+                const scriptEl = document.getElementById(callbackName);
+                if(scriptEl) scriptEl.remove();
 
-      const script = document.createElement("script");
-      script.id = "jsonpScript";
-      script.src = `${SCRIPT_URL}?callback=handleDataFromCloud&t=${new Date().getTime()}`;
-      script.onerror = () => {
-        showToast("Gagal terhubung ke Google Apps Script!", "error");
-        updateCloudBadge(false, "Terputus dari Cloud");
-      };
-      document.body.appendChild(script);
-    }
+                if (response && response.status === 'success') {
+                    globalData = response.data || [];
+                    setCloudStatus('online', 'Tersambung ke Cloud');
+                    applyFilters();
+                    showToast('Data berhasil diperbarui dari cloud', 'success');
+                } else {
+                    setCloudStatus('offline', 'Gagal memuat cloud');
+                    showToast('Gagal mengambil data dari cloud', 'error');
+                }
+            };
 
-    // CALLBACK JSONP
-    function handleDataFromCloud(response) {
-      if (response && response.status === "success") {
-        rawCloudData = response.data || [];
-        updateCloudBadge(true, "Tersambung ke Cloud");
-        populateDynamicClassFilter();
-        applyFilters();
-        updateMetrics();
-      } else {
-        showToast("Gagal mengambil data dari cloud", "error");
-        updateCloudBadge(false, "Error Data Cloud");
-      }
-    }
-
-    // UPDATE INDIKATOR CLOUD
-    function updateCloudBadge(isConnected, text) {
-      const badge = document.getElementById("cloudStatus");
-      const textEl = document.getElementById("cloudStatusText");
-      textEl.textContent = text;
-
-      if (isConnected) {
-        badge.className = "flex items-center gap-2.5 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-medium text-xs sm:text-sm";
-      } else {
-        badge.className = "flex items-center gap-2.5 px-4 py-2 rounded-full bg-rose-50 border border-rose-200 text-rose-700 font-medium text-xs sm:text-sm";
-      }
-    }
-
-    // 2. FORM HANDLING & CRUD
-    function handleFormSubmit(e) {
-      e.preventDefault();
-      
-      const editId = document.getElementById("editId").value;
-      const payloadData = {
-        id: editId || null,
-        namaGuru: document.getElementById("inputNamaGuru").value.trim(),
-        tanggal: document.getElementById("inputTanggal").value,
-        jamKe: document.getElementById("inputJamKe").value.trim(),
-        kelas: document.getElementById("inputKelas").value.trim(),
-        metode: document.getElementById("inputMetode").value,
-        materi: document.getElementById("inputMateri").value.trim(),
-        hadir: parseInt(document.getElementById("inputHadir").value) || 0,
-        sakit: parseInt(document.getElementById("inputSakit").value) || 0,
-        izin: parseInt(document.getElementById("inputIzin").value) || 0,
-        alpa: parseInt(document.getElementById("inputAlpa").value) || 0,
-        refleksi: document.getElementById("inputRefleksi").value.trim()
-      };
-
-      const action = editId ? "update" : "create";
-      sendPayloadToCloud(action, payloadData);
-    }
-
-    function sendPayloadToCloud(action, data) {
-      const btnSubmit = document.getElementById("btnSubmit");
-      const originalText = document.getElementById("btnSubmitText").textContent;
-      
-      btnSubmit.disabled = true;
-      document.getElementById("btnSubmitText").textContent = "Proses Simpan...";
-
-      fetch(SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: action, data: data })
-      })
-      .then(() => {
-        showToast(action === "create" ? "Data berhasil disimpan!" : "Data berhasil diperbarui!", "success");
-        resetForm();
-        setTimeout(fetchDataFromCloud, 1200); // Re-fetch data
-      })
-      .catch(error => {
-        showToast("Terjadi kesalahan koneksi!", "error");
-        console.error(error);
-      })
-      .finally(() => {
-        btnSubmit.disabled = false;
-        document.getElementById("btnSubmitText").textContent = originalText;
-      });
-    }
-
-    function startEditMode(id) {
-      const item = rawCloudData.find(d => d.id === id);
-      if (!item) return;
-
-      document.getElementById("editId").value = item.id;
-      document.getElementById("inputNamaGuru").value = item.namaGuru;
-      document.getElementById("inputTanggal").value = item.tanggal;
-      document.getElementById("inputJamKe").value = item.jamKe;
-      document.getElementById("inputKelas").value = item.kelas;
-      document.getElementById("inputMetode").value = item.metode;
-      document.getElementById("inputMateri").value = item.materi;
-      document.getElementById("inputHadir").value = item.hadir;
-      document.getElementById("inputSakit").value = item.sakit;
-      document.getElementById("inputIzin").value = item.izin;
-      document.getElementById("inputAlpa").value = item.alpa;
-      document.getElementById("inputRefleksi").value = item.refleksi;
-
-      document.getElementById("formTitle").innerHTML = `<i class="fa-solid fa-pen-to-square text-amber-600"></i> Edit Agenda Pembelajaran`;
-      document.getElementById("formModeBadge").textContent = "Mode Ubah";
-      document.getElementById("formModeBadge").className = "bg-amber-100 text-amber-700 text-xs font-semibold px-2.5 py-0.5 rounded-full";
-      document.getElementById("btnSubmitText").textContent = "Perbarui Data di Spreadsheet";
-      document.getElementById("btnSubmit").className = "w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition duration-200 flex items-center justify-center gap-2 text-sm";
-      document.getElementById("btnCancel").classList.remove("hidden");
-
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function resetForm() {
-      document.getElementById("agendaForm").reset();
-      document.getElementById("editId").value = "";
-      
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById("inputTanggal").value = today;
-
-      document.getElementById("formTitle").innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-600"></i> Input Agenda Pembelajaran`;
-      document.getElementById("formModeBadge").textContent = "Mode Baru";
-      document.getElementById("formModeBadge").className = "bg-indigo-100 text-indigo-700 text-xs font-semibold px-2.5 py-0.5 rounded-full";
-      document.getElementById("btnSubmitText").textContent = "Simpan ke Spreadsheet";
-      document.getElementById("btnSubmit").className = "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition duration-200 flex items-center justify-center gap-2 text-sm";
-      document.getElementById("btnCancel").classList.add("hidden");
-    }
-
-    function openDeleteModal(id) {
-      pendingDeleteId = id;
-      document.getElementById("deleteModal").classList.remove("hidden");
-      document.getElementById("confirmDeleteBtn").onclick = executeDelete;
-    }
-
-    function closeDeleteModal() {
-      pendingDeleteId = null;
-      document.getElementById("deleteModal").classList.add("hidden");
-    }
-
-    function executeDelete() {
-      if (!pendingDeleteId) return;
-      const deleteId = pendingDeleteId;
-      closeDeleteModal();
-      sendPayloadToCloud("delete", { id: deleteId });
-    }
-
-    // 3. FILTER, METRIK & RENDERING TABEL
-    function populateDynamicClassFilter() {
-      const filterSelect = document.getElementById("filterKelas");
-      const currentSelected = filterSelect.value;
-      
-      const classSet = new Set();
-      rawCloudData.forEach(item => {
-        if (item.kelas) classSet.add(item.kelas.trim());
-      });
-
-      filterSelect.innerHTML = `<option value="">Semua Kelas</option>`;
-      Array.from(classSet).sort().forEach(cls => {
-        const option = document.createElement("option");
-        option.value = cls;
-        option.textContent = cls;
-        filterSelect.appendChild(option);
-      });
-
-      filterSelect.value = currentSelected;
-    }
-
-    function applyFilters() {
-      const selectedKelas = document.getElementById("filterKelas").value.toLowerCase();
-      const selectedBulan = document.getElementById("filterBulan").value;
-
-      filteredData = rawCloudData.filter(item => {
-        const matchKelas = !selectedKelas || item.kelas.toLowerCase() === selectedKelas;
-        const matchBulan = !selectedBulan || (item.tanggal && item.tanggal.startsWith(selectedBulan));
-        return matchKelas && matchBulan;
-      });
-
-      currentPage = 1;
-      renderTable();
-    }
-
-    function resetFilters() {
-      document.getElementById("filterKelas").value = "";
-      document.getElementById("filterBulan").value = "";
-      applyFilters();
-    }
-
-    function changePageSize() {
-      itemsPerPage = parseInt(document.getElementById("pageSize").value);
-      currentPage = 1;
-      renderTable();
-    }
-
-    function renderTable() {
-      const tbody = document.getElementById("tableBody");
-      tbody.innerHTML = "";
-
-      if (filteredData.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="7" class="text-center py-8 text-slate-400 font-medium">
-              Tidak ada data agenda pembelajaran yang ditemukan.
-            </td>
-          </tr>`;
-        updatePaginationNav(0);
-        return;
-      }
-
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
-      const pageData = filteredData.slice(startIndex, endIndex);
-
-      pageData.forEach((item, index) => {
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-slate-50/80 transition duration-150";
-
-        const badgeMetode = item.metode === "Praktikum" 
-          ? `<span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 border-badge-print">Praktikum</span>`
-          : `<span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200 border-badge-print">Teori</span>`;
-
-        tr.innerHTML = `
-          <td class="py-3 px-2 text-center font-medium text-slate-500">${startIndex + index + 1}</td>
-          <td class="py-3 px-3 font-semibold whitespace-nowrap text-slate-700">${item.tanggal}</td>
-          <td class="py-3 px-3">
-            <div class="font-bold text-slate-800">${escapeHtml(item.kelas)}</div>
-            <div class="text-[11px] text-slate-500">Jam: ${escapeHtml(item.jamKe)}</div>
-            <div class="text-[11px] text-indigo-600 font-medium no-print">${escapeHtml(item.namaGuru)}</div>
-          </td>
-          <td class="py-3 px-3">
-            <div class="text-slate-800 font-medium mb-1">${escapeHtml(item.materi)}</div>
-            <div>${badgeMetode}</div>
-          </td>
-          <td class="py-3 px-3 text-center">
-            <div class="inline-flex gap-1.5 text-[11px] font-semibold">
-              <span class="text-emerald-600" title="Hadir">H:${item.hadir}</span>
-              <span class="text-amber-600" title="Sakit">S:${item.sakit}</span>
-              <span class="text-blue-600" title="Izin">I:${item.izin}</span>
-              <span class="text-rose-600" title="Alpa">A:${item.alpa}</span>
-            </div>
-          </td>
-          <td class="py-3 px-3 text-slate-600 italic text-[11px]">
-            ${escapeHtml(item.refleksi || '-')}
-          </td>
-          <td class="py-3 px-3 text-center space-x-1 whitespace-nowrap no-print">
-            <button onclick="startEditMode('${item.id}')" title="Edit" class="p-1.5 bg-slate-100 hover:bg-amber-100 text-amber-600 rounded-md transition">
-              <i class="fa-solid fa-pen-to-square"></i>
-            </button>
-            <button onclick="openDeleteModal('${item.id}')" title="Hapus" class="p-1.5 bg-slate-100 hover:bg-rose-100 text-rose-600 rounded-md transition">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      updatePaginationNav(filteredData.length);
-    }
-
-    function updatePaginationNav(totalItems) {
-      const infoEl = document.getElementById("paginationInfo");
-      const navEl = document.getElementById("paginationNav");
-
-      if (totalItems === 0) {
-        infoEl.textContent = "Menampilkan 0 - 0 dari 0 data";
-        navEl.innerHTML = "";
-        return;
-      }
-
-      const startIndex = (currentPage - 1) * itemsPerPage + 1;
-      const endIndex = Math.min(currentPage * itemsPerPage, totalItems);
-      const totalPages = Math.ceil(totalItems / itemsPerPage);
-
-      infoEl.textContent = `Menampilkan ${startIndex} - ${endIndex} dari ${totalItems} data`;
-
-      let navHtml = `
-        <button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="px-2.5 py-1 text-xs border border-slate-300 rounded hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent">
-          <i class="fa-solid fa-chevron-left"></i>
-        </button>
-      `;
-
-      for (let i = 1; i <= totalPages; i++) {
-        if (i === currentPage) {
-          navHtml += `<button class="px-2.5 py-1 text-xs font-bold bg-indigo-600 text-white rounded">${i}</button>`;
-        } else {
-          navHtml += `<button onclick="goToPage(${i})" class="px-2.5 py-1 text-xs border border-slate-300 rounded hover:bg-slate-100">${i}</button>`;
-        }
-      }
-
-      navHtml += `
-        <button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="px-2.5 py-1 text-xs border border-slate-300 rounded hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent">
-          <i class="fa-solid fa-chevron-right"></i>
-        </button>
-      `;
-
-      navEl.innerHTML = navHtml;
-    }
-
-    function goToPage(page) {
-      const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-      if (page >= 1 && page <= totalPages) {
-        currentPage = page;
-        renderTable();
-      }
-    }
-
-    function updateMetrics() {
-      METRIC_CLASSES.forEach((className, index) => {
-        const classItems = rawCloudData.filter(d => d.kelas && d.kelas.trim().toLowerCase() === className.toLowerCase());
-        
-        let latestGuru = "-";
-        let hadir = 0, sakit = 0, izin = 0, alpa = 0;
-
-        if (classItems.length > 0) {
-          latestGuru = classItems[0].namaGuru || "-";
-          classItems.forEach(item => {
-            hadir += item.hadir || 0;
-            sakit += item.sakit || 0;
-            izin += item.izin || 0;
-            alpa += item.alpa || 0;
-          });
+            // Inject <script> tag for JSONP request
+            const script = document.createElement('script');
+            script.id = callbackName;
+            script.src = `${SCRIPT_URL}?action=read&callback=${callbackName}&t=${new Date().getTime()}`;
+            script.onerror = function() {
+                if(icon) icon.classList.remove('fa-spin');
+                setCloudStatus('offline', 'Koneksi Terputus');
+                showToast('Gagal terhubung ke Google Apps Script', 'error');
+            };
+            document.body.appendChild(script);
         }
 
-        document.getElementById(`metric-guru-${index}`).textContent = `Guru: ${latestGuru}`;
-        document.getElementById(`metric-absensi-${index}`).innerHTML = `
-          <div><span class="block text-[10px] text-slate-400 font-normal">H</span><span class="text-emerald-600">${hadir}</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">S</span><span class="text-amber-600">${sakit}</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">I</span><span class="text-blue-600">${izin}</span></div>
-          <div><span class="block text-[10px] text-slate-400 font-normal">A</span><span class="text-rose-600">${alpa}</span></div>
-        `;
-      });
-    }
+        function refreshDataFromCloud() {
+            fetchDataFromCloud();
+        }
 
-    // 4. EKSPOR EXCEL ASLI (.XLSX) VIA SHEETJS
-    function exportToExcel() {
-      if (filteredData.length === 0) {
-        showToast("Tidak ada data untuk diunduh", "error");
-        return;
-      }
+        // ==========================================
+        // 3. POST DATA INTEGRATION (CREATE/UPDATE/DELETE)
+        // ==========================================
+        async function sendPostRequest(payload) {
+            setCloudStatus('loading', 'Menyimpan...');
+            try {
+                // Using fetch with mode no-cors for Google Apps Script Web App
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-      const excelRows = filteredData.map((item, idx) => ({
-        "No": idx + 1,
-        "Tanggal": item.tanggal,
-        "Jam Ke": item.jamKe,
-        "Kelas": item.kelas,
-        "Nama Guru": item.namaGuru,
-        "Materi / TP": item.materi,
-        "Metode": item.metode,
-        "Hadir": item.hadir,
-        "Sakit": item.sakit,
-        "Izin": item.izin,
-        "Alpa": item.alpa,
-        "Refleksi Guru": item.refleksi
-      }));
+                showToast('Permintaan berhasil dikirim ke Cloud', 'success');
+                // Refresh data after short delay to allow Apps Script to complete execution
+                setTimeout(() => {
+                    fetchDataFromCloud();
+                }, 1500);
 
-      const worksheet = XLSX.utils.json_to_sheet(excelRows);
+            } catch (error) {
+                console.error('POST Error:', error);
+                setCloudStatus('offline', 'Gagal menyimpan');
+                showToast('Terjadi kesalahan koneksi', 'error');
+            }
+        }
 
-      worksheet['!cols'] = [
-        { wch: 5 },  // No
-        { wch: 12 }, // Tanggal
-        { wch: 10 }, // Jam Ke
-        { wch: 18 }, // Kelas
-        { wch: 25 }, // Nama Guru
-        { wch: 35 }, // Materi / TP
-        { wch: 12 }, // Metode
-        { wch: 8 },  // Hadir
-        { wch: 8 },  // Sakit
-        { wch: 8 },  // Izin
-        { wch: 8 },  // Alpa
-        { wch: 30 }  // Refleksi
-      ];
+        // ==========================================
+        // 4. FORM HANDLING & CRUD LOGIC
+        // ==========================================
+        function handleFormSubmit(e) {
+            e.preventDefault();
 
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Jurnal Agenda");
+            const payload = {
+                action: isEditing ? 'update' : 'create',
+                id: isEditing ? document.getElementById('recordId').value : 'ID-' + Date.now(),
+                namaGuru: document.getElementById('namaGuru').value.trim(),
+                tanggal: document.getElementById('tanggal').value,
+                jamKe: document.getElementById('jamKe').value.trim(),
+                kelas: document.getElementById('kelas').value,
+                metode: document.getElementById('metode').value,
+                materi: document.getElementById('materi').value.trim(),
+                absentHadir: parseInt(document.getElementById('absentHadir').value) || 0,
+                absentSakit: parseInt(document.getElementById('absentSakit').value) || 0,
+                absentIzin: parseInt(document.getElementById('absentIzin').value) || 0,
+                absentAlpa: parseInt(document.getElementById('absentAlpa').value) || 0,
+                refleksi: document.getElementById('refleksi').value.trim()
+            };
 
-      const today = new Date().toISOString().split('T')[0];
-      XLSX.writeFile(workbook, `Jurnal_Agenda_SMK_Teknologi_Obi_${today}.xlsx`);
-      showToast("File Excel (.xlsx) berhasil diunduh!", "success");
-    }
+            // Optimistic UI update or send directly
+            sendPostRequest(payload);
+            resetForm();
+        }
 
-    // 5. CETAK PDF & DIALOG PRINT KEDINASAN
-    function printPDF() {
-      if (filteredData.length === 0) {
-        showToast("Tidak ada data untuk dicetak", "error");
-        return;
-      }
+        function editRecord(id) {
+            const item = globalData.find(d => String(d.id) === String(id));
+            if (!item) return;
 
-      const now = new Date();
-      const options = { year: 'numeric', month: 'long', day: 'numeric' };
-      const dateString = now.toLocaleDateString('id-ID', options);
-      
-      document.getElementById("printDateSign").textContent = `Halmahera Selatan, ${dateString}`;
-      
-      let namaGuruPrint = "........................................";
-      if (filteredData.length > 0 && filteredData[0].namaGuru) {
-        namaGuruPrint = filteredData[0].namaGuru;
-      }
-      document.getElementById("printGuruName").textContent = `( ${namaGuruPrint} )`;
+            isEditing = true;
+            document.getElementById('recordId').value = item.id;
+            document.getElementById('namaGuru').value = item.namaGuru || '';
+            document.getElementById('tanggal').value = item.tanggal || '';
+            document.getElementById('jamKe').value = item.jamKe || '';
+            document.getElementById('kelas').value = item.kelas || '';
+            document.getElementById('metode').value = item.metode || 'Teori';
+            document.getElementById('materi').value = item.materi || '';
+            document.getElementById('absentHadir').value = item.absentHadir || 0;
+            document.getElementById('absentSakit').value = item.absentSakit || 0;
+            document.getElementById('absentIzin').value = item.absentIzin || 0;
+            document.getElementById('absentAlpa').value = item.absentAlpa || 0;
+            document.getElementById('refleksi').value = item.refleksi || '';
 
-      window.print();
-    }
+            // Update UI elements for Edit Mode
+            document.getElementById('formTitle').innerText = 'Ubah Agenda Pembelajaran';
+            document.getElementById('editBadge').classList.remove('hidden');
+            document.getElementById('btnSubmitText').innerText = 'Perbarui Data di Spreadsheet';
+            document.getElementById('btnSubmitForm').className = 'w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 text-sm';
+            document.getElementById('btnCancelEdit').classList.remove('hidden');
 
-    let originalPageSize = 10;
-    window.onbeforeprint = () => {
-      originalPageSize = itemsPerPage;
-      itemsPerPage = 999999;
-      currentPage = 1;
-      renderTable();
-    };
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
-    window.onafterprint = () => {
-      itemsPerPage = originalPageSize;
-      renderTable();
-    };
+        function resetForm() {
+            isEditing = false;
+            document.getElementById('agendaForm').reset();
+            document.getElementById('recordId').value = '';
+            document.getElementById('tanggal').value = new Date().toISOString().split('T')[0];
 
-    // UTILITY: TOAST NOTIFICATION
-    function showToast(message, type = "success") {
-      const container = document.getElementById("toastContainer");
-      const toast = document.createElement("div");
+            // Reset UI for New Mode
+            document.getElementById('formTitle').innerText = 'Form Agenda Baru';
+            document.getElementById('editBadge').classList.add('hidden');
+            document.getElementById('btnSubmitText').innerText = 'Simpan ke Spreadsheet';
+            document.getElementById('btnSubmitForm').className = 'w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 text-sm';
+            document.getElementById('btnCancelEdit').classList.add('hidden');
+        }
 
-      const bgColor = type === "success" ? "bg-emerald-600" : "bg-rose-600";
-      const icon = type === "success" ? "fa-circle-check" : "fa-circle-xmark";
+        function confirmDelete(id) {
+            pendingDeleteId = id;
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
 
-      toast.className = `${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2.5 text-xs font-semibold animate-in fade-in slide-in-from-top-2 duration-300`;
-      toast.innerHTML = `<i class="fa-solid ${icon} text-sm"></i> <span>${escapeHtml(message)}</span>`;
+        document.getElementById('btnCancelModal').onclick = function() {
+            pendingDeleteId = null;
+            document.getElementById('confirmModal').classList.add('hidden');
+        };
 
-      container.appendChild(toast);
+        document.getElementById('btnConfirmModal').onclick = function() {
+            if (pendingDeleteId) {
+                sendPostRequest({ action: 'delete', id: pendingDeleteId });
+                pendingDeleteId = null;
+            }
+            document.getElementById('confirmModal').classList.add('hidden');
+        };
 
-      setTimeout(() => {
-        toast.classList.add("opacity-0", "transition", "duration-300");
-        setTimeout(() => toast.remove(), 300);
-      }, 3000);
-    }
+        // ==========================================
+        // 5. METRIC CARDS & RENDERING LOGIC
+        // ==========================================
+        function updateMetricCards() {
+            const container = document.getElementById('metricCardsContainer');
+            container.innerHTML = '';
 
-    function escapeHtml(text) {
-      if (!text) return "";
-      return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, '&#039;');
-    }
-  </script>
+            MASTER_CLASSES.forEach(cls => {
+                // Filter data per class
+                const classRecords = globalData.filter(d => String(d.kelas).toLowerCase() === cls.id.toLowerCase());
+                
+                // Aggregate attendance
+                let h = 0, s = 0, i = 0, a = 0;
+                let latestGuru = cls.defaultGuru;
+
+                classRecords.forEach(r => {
+                    h += parseInt(r.absentHadir || 0);
+                    s += parseInt(r.absentSakit || 0);
+                    i += parseInt(r.absentIzin || 0);
+                    a += parseInt(r.absentAlpa || 0);
+                    if(r.namaGuru) latestGuru = r.namaGuru;
+                });
+
+                const cardHtml = `
+                    <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-sm hover:shadow-md transition">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-sm text-slate-800">${cls.name}</span>
+                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-brand-50 text-brand-700">${classRecords.length} Sesi</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-3 truncate" title="${latestGuru}">
+                            <i class="fa-solid fa-user-tie text-slate-400 mr-1"></i> ${latestGuru}
+                        </p>
+                        <div class="grid grid-cols-4 gap-1 text-center pt-2 border-t border-slate-100">
+                            <div>
+                                <span class="block text-[9px] font-bold text-slate-400">H</span>
+                                <span class="text-xs font-bold text-emerald-600">${h}</span>
+                            </div>
+                            <div>
+                                <span class="block text-[9px] font-bold text-slate-400">S</span>
+                                <span class="text-xs font-bold text-amber-600">${s}</span>
+                            </div>
+                            <div>
+                                <span class="block text-[9px] font-bold text-slate-400">I</span>
+                                <span class="text-xs font-bold text-blue-600">${i}</span>
+                            </div>
+                            <div>
+                                <span class="block text-[9px] font-bold text-slate-400">A</span>
+                                <span class="text-xs font-bold text-rose-600">${a}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+        // ==========================================
+        // 6. FILTERING & PAGINATION LOGIC
+        // ==========================================
+        function applyFilters() {
+            const classFilter = document.getElementById('filterKelas').value;
+            const monthFilter = document.getElementById('filterBulan').value; // Format YYYY-MM
+
+            filteredData = globalData.filter(item => {
+                let matchClass = true;
+                let matchMonth = true;
+
+                if (classFilter) {
+                    matchClass = String(item.kelas).toLowerCase() === classFilter.toLowerCase();
+                }
+
+                if (monthFilter && item.tanggal) {
+                    matchMonth = String(item.tanggal).substring(0, 7) === monthFilter;
+                }
+
+                return matchClass && matchMonth;
+            });
+
+            // Reset page to 1 on filter change
+            currentPage = 1;
+            updateMetricCards();
+            renderTable();
+        }
+
+        function resetFilters() {
+            document.getElementById('filterKelas').value = '';
+            document.getElementById('filterBulan').value = '';
+            applyFilters();
+        }
+
+        function changePageSize(size) {
+            pageSize = parseInt(size);
+            currentPage = 1;
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+
+            if (filteredData.length === 0) {
+                emptyState.classList.remove('hidden');
+                document.getElementById('paginationInfo').innerText = 'Menampilkan 0 dari 0 data';
+                document.getElementById('paginationControls').innerHTML = '';
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            // Calculate pagination boundaries
+            const totalData = filteredData.length;
+            const totalPages = Math.ceil(totalData / pageSize);
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = Math.min(startIndex + pageSize, totalData);
+            const pageData = filteredData.slice(startIndex, endIndex);
+
+            // Render Rows
+            pageData.forEach((item, index) => {
+                const rowNum = startIndex + index + 1;
+                const metodeBadge = item.metode === 'Praktikum' 
+                    ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Praktikum</span>`
+                    : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">Teori</span>`;
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/80 transition border-b border-slate-100';
+                tr.innerHTML = `
+                    <td class="py-3 px-3 text-center font-medium text-slate-500">${rowNum}</td>
+                    <td class="py-3 px-3">
+                        <div class="font-semibold text-slate-800">${escapeHtml(item.tanggal || '-')}</div>
+                        <div class="text-[11px] text-slate-400">Jam Ke: ${escapeHtml(item.jamKe || '-')}</div>
+                    </td>
+                    <td class="py-3 px-3">
+                        <div class="font-semibold text-slate-800">${escapeHtml(item.kelas || '-')}</div>
+                        <div class="text-[11px] text-slate-500">${escapeHtml(item.namaGuru || '-')}</div>
+                    </td>
+                    <td class="py-3 px-3 max-w-xs">
+                        <p class="line-clamp-2 text-slate-700">${escapeHtml(item.materi || '-')}</p>
+                    </td>
+                    <td class="py-3 px-3 text-center">${metodeBadge}</td>
+                    <td class="py-3 px-3 text-center">
+                        <div class="inline-flex gap-1.5 font-medium text-[11px]">
+                            <span class="text-emerald-600 font-bold" title="Hadir">${item.absentHadir || 0}</span>/
+                            <span class="text-amber-600 font-bold" title="Sakit">${item.absentSakit || 0}</span>/
+                            <span class="text-blue-600 font-bold" title="Izin">${item.absentIzin || 0}</span>/
+                            <span class="text-rose-600 font-bold" title="Alpa">${item.absentAlpa || 0}</span>
+                        </div>
+                    </td>
+                    <td class="py-3 px-3 max-w-xs italic text-slate-500">
+                        ${escapeHtml(item.refleksi || '-')}
+                    </td>
+                    <td class="py-3 px-3 text-center no-print">
+                        <div class="flex items-center justify-center gap-1">
+                            <button onclick="editRecord('${item.id}')" title="Ubah Data" class="p-1.5 rounded-md hover:bg-slate-200 text-slate-600 transition">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="confirmDelete('${item.id}')" title="Hapus Data" class="p-1.5 rounded-md hover:bg-rose-100 text-rose-600 transition">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Update Pagination Info
+            document.getElementById('paginationInfo').innerText = `Menampilkan ${startIndex + 1} - ${endIndex} dari ${totalData} data`;
+
+            // Render Pagination Buttons
+            renderPaginationControls(totalPages);
+        }
+
+        function renderPaginationControls(totalPages) {
+            const controls = document.getElementById('paginationControls');
+            controls.innerHTML = '';
+
+            // Previous Button
+            const prevBtn = document.createElement('button');
+            prevBtn.className = `px-2.5 py-1 rounded text-xs font-medium ${currentPage === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-200'}`;
+            prevBtn.innerHTML = `<i class="fa-solid fa-chevron-left"></i>`;
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; renderTable(); } };
+            controls.appendChild(prevBtn);
+
+            // Page Number Buttons
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.className = `px-2.5 py-1 rounded text-xs font-semibold ${i === currentPage ? 'bg-brand-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`;
+                    pageBtn.innerText = i;
+                    pageBtn.onclick = () => { currentPage = i; renderTable(); };
+                    controls.appendChild(pageBtn);
+                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                    const dots = document.createElement('span');
+                    dots.className = 'px-1 text-slate-400 text-xs';
+                    dots.innerText = '...';
+                    controls.appendChild(dots);
+                }
+            }
+
+            // Next Button
+            const nextBtn = document.createElement('button');
+            nextBtn.className = `px-2.5 py-1 rounded text-xs font-medium ${currentPage === totalPages || totalPages === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-200'}`;
+            nextBtn.innerHTML = `<i class="fa-solid fa-chevron-right"></i>`;
+            nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+            nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; renderTable(); } };
+            controls.appendChild(nextBtn);
+        }
+
+        // ==========================================
+        // 7. EXPORT TO NATIVE .XLSX VIA SHEETJS
+        // ==========================================
+        function exportToExcel() {
+            if (filteredData.length === 0) {
+                showToast('Tidak ada data untuk diekspor', 'error');
+                return;
+            }
+
+            // Prepare Data Array
+            const excelRows = filteredData.map((item, index) => ({
+                "No": index + 1,
+                "Tanggal": item.tanggal || '',
+                "Jam Ke": item.jamKe || '',
+                "Kelas / Rombel": item.kelas || '',
+                "Nama Guru": item.namaGuru || '',
+                "Materi Pembelajaran": item.materi || '',
+                "Metode": item.metode || '',
+                "Hadir": item.absentHadir || 0,
+                "Sakit": item.absentSakit || 0,
+                "Izin": item.absentIzin || 0,
+                "Alpa": item.absentAlpa || 0,
+                "Refleksi / Catatan Guru": item.refleksi || ''
+            }));
+
+            // Create Worksheet
+            const worksheet = XLSX.utils.json_to_sheet(excelRows);
+
+            // Set Column Widths (!cols) to prevent overlap in Column A
+            worksheet['!cols'] = [
+                { wch: 6 },  // No
+                { wch: 12 }, // Tanggal
+                { wch: 10 }, // Jam Ke
+                { wch: 16 }, // Kelas
+                { wch: 25 }, // Nama Guru
+                { wch: 35 }, // Materi
+                { wch: 12 }, // Metode
+                { wch: 8 },  // H
+                { wch: 8 },  // S
+                { wch: 8 },  // I
+                { wch: 8 },  // A
+                { wch: 30 }  // Refleksi
+            ];
+
+            // Create Workbook & Append Sheet
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Jurnal Pembelajaran");
+
+            // Generate Filename with Timestamp
+            const fileName = `Jurnal_SMK_Teknologi_Obi_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            XLSX.writeFile(workbook, fileName);
+
+            showToast('Berhasil mengunduh berkas Excel (.xlsx)', 'success');
+        }
+
+        // ==========================================
+        // 8. PRINT & KEDINASAN PRINT LISTENER
+        // ==========================================
+        function triggerPrint() {
+            window.print();
+        }
+
+        // Window Print Listeners for complete unfiltered printout
+        window.onbeforeprint = function() {
+            // Update Print Title Subheader
+            const classFilter = document.getElementById('filterKelas').value;
+            const monthFilter = document.getElementById('filterBulan').value;
+            let sub = "Periode: Seluruh Pembelajaran";
+            if (classFilter || monthFilter) {
+                sub = `Filter: Kelas ${classFilter || 'Semua'} | Bulan ${monthFilter || 'Semua'}`;
+            }
+            document.getElementById('printSubTitle').innerText = sub;
+
+            // Set Guru Name in signature block if single teacher filtered
+            if(filteredData.length > 0 && filteredData[0].namaGuru) {
+                document.getElementById('printGuruName').innerText = `( ${filteredData[0].namaGuru.toUpperCase()} )`;
+            }
+
+            // Temporarily show ALL filtered data rows during print (bypass page limit)
+            const savedPageSize = pageSize;
+            pageSize = 999999;
+            renderTable();
+            window._savedPageSize = savedPageSize;
+        };
+
+        window.onafterprint = function() {
+            // Restore pagination page size
+            if (window._savedPageSize) {
+                pageSize = window._savedPageSize;
+                renderTable();
+            }
+        };
+
+        // ==========================================
+        // 9. HELPER & UI FEEDBACK UTILITIES
+        // ==========================================
+        function setCloudStatus(status, text) {
+            const badge = document.getElementById('cloudStatusBadge');
+            const pingDot = document.getElementById('pingDot');
+            const staticDot = document.getElementById('staticDot');
+            const statusText = document.getElementById('statusText');
+
+            statusText.innerText = text;
+
+            if (status === 'online') {
+                badge.className = "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800";
+                pingDot.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
+                staticDot.className = "relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500";
+            } else if (status === 'loading') {
+                badge.className = "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-950/80 text-amber-400 border border-amber-800";
+                pingDot.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75";
+                staticDot.className = "relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500";
+            } else {
+                badge.className = "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-950/80 text-rose-400 border border-rose-800";
+                pingDot.className = "hidden";
+                staticDot.className = "relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500";
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+
+            let icon = 'fa-circle-info';
+            let bg = 'bg-slate-800 text-white';
+
+            if (type === 'success') {
+                icon = 'fa-circle-check';
+                bg = 'bg-emerald-600 text-white';
+            } else if (type === 'error') {
+                icon = 'fa-circle-xmark';
+                bg = 'bg-rose-600 text-white';
+            }
+
+            toast.className = `${bg} px-4 py-3 rounded-xl shadow-lg text-xs font-medium flex items-center gap-3 transform transition-all duration-300 opacity-0 translate-y-2`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i> <span>${escapeHtml(message)}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
 </body>
 </html>
